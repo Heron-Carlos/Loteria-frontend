@@ -2,7 +2,13 @@ import axios from 'axios';
 import { IAuthService } from '../interfaces/services.interface';
 import { LoginRequest, LoginResponse, Partner } from '../types/auth.types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const getApiBaseUrl = (): string => {
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  // Remover barra no final se existir
+  return url.replace(/\/$/, '');
+};
+
+const API_BASE_URL = getApiBaseUrl();
 const API_URL = `${API_BASE_URL}/api/auth`;
 const STORAGE_KEY = 'currentUser';
 

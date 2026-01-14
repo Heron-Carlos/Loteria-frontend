@@ -3,7 +3,13 @@ import { IBetService } from '../interfaces/services.interface';
 import { Bet, CreateBetRequest } from '../types/bet.types';
 import { IAuthService } from '../interfaces/services.interface';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const getApiBaseUrl = (): string => {
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  // Remover barra no final se existir
+  return url.replace(/\/$/, '');
+};
+
+const API_BASE_URL = getApiBaseUrl();
 const API_URL = `${API_BASE_URL}/api/bets`;
 
 export class BetService implements IBetService {
