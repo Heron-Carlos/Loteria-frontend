@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { IBetService } from '../interfaces/services.interface';
-import { LoginResponse } from '../types/auth.types';
 import toast from 'react-hot-toast';
 
 type UseExportBetsParams = {
