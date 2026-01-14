@@ -2,7 +2,8 @@ import axios from 'axios';
 import { IAuthService } from '../interfaces/services.interface';
 import { LoginRequest, LoginResponse, Partner } from '../types/auth.types';
 
-const API_URL = '/api/auth';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = `${API_BASE_URL}/api/auth`;
 const STORAGE_KEY = 'currentUser';
 
 export class AuthService implements IAuthService {

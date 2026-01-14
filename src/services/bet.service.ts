@@ -3,7 +3,8 @@ import { IBetService } from '../interfaces/services.interface';
 import { Bet, CreateBetRequest } from '../types/bet.types';
 import { IAuthService } from '../interfaces/services.interface';
 
-const API_URL = '/api/bets';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = `${API_BASE_URL}/api/bets`;
 
 export class BetService implements IBetService {
   private localBets: Bet[] = [];
