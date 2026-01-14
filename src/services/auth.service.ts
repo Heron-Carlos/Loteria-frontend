@@ -6,6 +6,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const API_URL = `${API_BASE_URL}/api/auth`;
 const STORAGE_KEY = 'currentUser';
 
+// Log para debug (remover em produção se necessário)
+if (import.meta.env.PROD) {
+  console.log('API Base URL:', API_BASE_URL);
+}
+
 export class AuthService implements IAuthService {
   private currentUser: LoginResponse | null = null;
 
