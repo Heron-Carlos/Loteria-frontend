@@ -3,7 +3,46 @@ import { IBetService } from '../interfaces/services.interface';
 import { Bet, CreateBetRequest } from '../types/bet.types';
 import { IAuthService } from '../interfaces/services.interface';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Usar variável de ambiente ou detectar automaticamente em produção
+const getApiBaseUrl = (): string => {
+  // Se a variável de ambiente estiver definida, usar ela
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Em desenvolvimento, usar localhost
+  if (import.meta.env.DEV) {
+    return 'http://localhost:3000';
+  }
+  
+  // Em produção sem variável, tentar inferir do domínio atual
+  const hostname = window.location.hostname;
+  if (hostname.includes('vercel.app')) {
+    // Tentar diferentes padrões de nome
+    let backendHostname = hostname;
+    
+    // Padrão: loteria-frontend -> loteria-backend
+    if (hostname.includes('loteria-frontend')) {
+      backendHostname = hostname.replace('loteria-frontend', 'loteria-backend');
+    }
+    // Padrão: frontend -> backend
+    else if (hostname.includes('-frontend')) {
+      backendHostname = hostname.replace('-frontend', '-backend');
+    }
+    // Padrão: front -> back
+    else if (hostname.includes('front')) {
+      backendHostname = hostname.replace('front', 'back');
+    }
+    
+    return `https://${backendHostname}`;
+  }
+  
+  // Fallback: tentar usar o domínio atual (pode funcionar se backend e frontend estão no mesmo domínio)
+  console.warn('VITE_API_URL não configurada. Tentando usar o domínio atual.');
+  return `https://${hostname}`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 const API_URL = `${API_BASE_URL}/api/bets`;
 
 export class BetService implements IBetService {
