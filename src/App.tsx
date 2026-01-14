@@ -2,10 +2,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthService } from './services/auth.service';
 import { BetService } from './services/bet.service';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { MegaBetPage } from './pages/MegaBetPage';
 import { QuinaBetPage } from './pages/QuinaBetPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { Layout } from './components/Layout';
 
 const authService = new AuthService();
 const betService = new BetService(authService);
@@ -14,6 +16,16 @@ const App = (): JSX.Element => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage authService={authService} />} />
+      <Route
+        path="/register"
+        element={
+          <ProtectedRoute authService={authService}>
+            <Layout authService={authService}>
+              <RegisterPage authService={authService} />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/mega"
         element={<MegaBetPage betService={betService} authService={authService} />}
@@ -26,7 +38,9 @@ const App = (): JSX.Element => {
         path="/admin/dashboard"
         element={
           <ProtectedRoute authService={authService}>
-            <AdminDashboardPage betService={betService} authService={authService} />
+            <Layout authService={authService}>
+              <AdminDashboardPage betService={betService} authService={authService} />
+            </Layout>
           </ProtectedRoute>
         }
       />

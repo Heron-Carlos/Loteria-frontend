@@ -12,6 +12,14 @@ export type LoginResponse = {
   quinaSigla: string;
 };
 
+export type RegisterRequest = {
+  username: string;
+  password: string;
+  role?: 'Partner' | 'Admin';
+  megaSigla: string;
+  quinaSigla: string;
+};
+
 export type Partner = {
   id: string;
   partnerId: string;

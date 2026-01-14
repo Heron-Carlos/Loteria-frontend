@@ -12,8 +12,10 @@ import { GAME_TYPES, EXPORT_OPTIONS } from '@/constants/dashboard.constants';
 type FiltersBarProps = {
   filteredGameType: string | null;
   exportGameType: string | null;
+  isPaidFilter: boolean | null;
   onFilterChange: (gameType: string | null) => void;
   onExportGameTypeChange: (gameType: string | null) => void;
+  onIsPaidFilterChange: (isPaid: boolean | null) => void;
   onExport: () => void;
   hasBets: boolean;
 };
@@ -21,8 +23,10 @@ type FiltersBarProps = {
 export const FiltersBar = ({
   filteredGameType,
   exportGameType,
+  isPaidFilter,
   onFilterChange,
   onExportGameTypeChange,
+  onIsPaidFilterChange,
   onExport,
   hasBets,
 }: FiltersBarProps): JSX.Element => {
@@ -43,6 +47,27 @@ export const FiltersBar = ({
             {type.label}
           </Button>
         ))}
+        <Select
+          value={isPaidFilter === null ? 'all' : isPaidFilter ? 'paid' : 'pending'}
+          onValueChange={(value: string) => {
+            if (value === 'all') {
+              onIsPaidFilterChange(null);
+            } else if (value === 'paid') {
+              onIsPaidFilterChange(true);
+            } else {
+              onIsPaidFilterChange(false);
+            }
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="Status..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="paid">Pago</SelectItem>
+            <SelectItem value="pending">Pendente</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

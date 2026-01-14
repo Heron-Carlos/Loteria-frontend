@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { IBetService } from '../interfaces/services.interface';
-import { Bet, CreateBetRequest } from '../types/bet.types';
+import { Bet, CreateBetRequest, PaginatedBetsResponse } from '../types/bet.types';
 import { IAuthService } from '../interfaces/services.interface';
+import { addSequentialNumbersToDuplicateNames } from '../utils/bet.utils';
 
 const getApiBaseUrl = (): string => {
   const url = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -37,16 +38,28 @@ export class BetService implements IBetService {
     return response.data.id;
   }
 
-  async getPartnerBets(_partnerId: string, gameType?: string): Promise<Bet[]> {
+  async getPartnerBets(_partnerId: string, gameType?: string, search?: string, isPaid?: boolean): Promise<Bet[]> {
     const headers = this.authService.getAuthHeader();
-    const params = gameType ? { gameType } : {};
+    const params: Record<string, string> = {};
+    
+    if (gameType) {
+      params.gameType = gameType;
+    }
+    
+    if (search && search.trim()) {
+      params.search = search.trim();
+    }
 
-    const response = await axios.get<Bet[]>(`${API_URL}/partner`, {
+    if (isPaid !== undefined) {
+      params.isPaid = isPaid.toString();
+    }
+
+    const response = await axios.get<PaginatedBetsResponse>(`${API_URL}/partner`, {
       headers,
       params,
     });
 
-    return response.data;
+    return response.data.bets;
   }
 
   async exportPartnerBetsToExcel(gameType?: string): Promise<Blob> {
@@ -113,7 +126,13 @@ export class BetService implements IBetService {
   }
 
   async sendFilteredBets(bets: Bet[]): Promise<void> {
-    const requests = bets.map((bet) => {
+    const firstBet = bets[0];
+    const gameType = firstBet?.gameType;
+    
+    const existingBets = await this.getPartnerBets('', gameType);
+    const betsWithNumberedNames = addSequentialNumbersToDuplicateNames(bets, existingBets);
+    
+    const requests = betsWithNumberedNames.map((bet) => {
       const request: CreateBetRequest = {
         playerName: bet.playerName,
         gameType: bet.gameType,

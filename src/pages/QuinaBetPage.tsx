@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { IBetService } from '../interfaces/services.interface';
-import { IAuthService } from '../interfaces/services.interface';
+import { BetPageProps } from '../types/pages.types';
+import { GAME_CONFIG } from '../constants/game.constants';
 import { useBets } from '../hooks/useBets.hook';
 import { useAuth } from '../hooks/useAuth.hook';
-import { Bet } from '../types/bet.types';
 import { NumberGrid } from '../components/NumberGrid';
 import { SelectedNumbersPreview } from '../components/SelectedNumbersPreview';
 import { BetList } from '../components/BetList';
@@ -18,32 +17,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { generateUUID } from '../utils/uuid';
 import { formatPartnerName } from '../utils/formatName';
 import { filterValidPartners } from '../utils/validatePartners';
+import { validateBetForm } from '../utils/validators/bet.validator';
+import { createBet, prepareBetsForSending } from '../utils/betCreation';
+import { confirmSendBets } from '../utils/confirmations';
+import { handlePlayerNameChange } from '../utils/formHandlers';
 import toast from 'react-hot-toast';
-import Swal from 'sweetalert2';
 
-type QuinaBetPageProps = {
-  betService: IBetService;
-  authService: IAuthService;
-};
+const GAME_CONFIG_QUINA = GAME_CONFIG.Quina;
 
-const GAME_TYPE = 'Quina' as const;
-const TOTAL_NUMBERS = 80;
-const MAX_SELECTIONS = 10;
-const SELECTED_COLOR = '#1565c0';
-
-export const QuinaBetPage = ({
-  betService,
-  authService,
-}: QuinaBetPageProps): JSX.Element => {
+export const QuinaBetPage = ({ betService, authService }: BetPageProps): JSX.Element => {
   const { partners } = useAuth(authService);
-  const { bets, addBet, removeBet, clearBets } = useBets(betService, GAME_TYPE);
+  const { bets, addBet, removeBet, clearBets } = useBets(betService, GAME_CONFIG_QUINA.type);
 
   const [playerName, setPlayerName] = useState('');
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   const validPartners = useMemo(() => filterValidPartners(partners), [partners]);
 
@@ -60,7 +51,7 @@ export const QuinaBetPage = ({
           return prev.filter((n) => n !== num);
         }
 
-        if (prev.length < MAX_SELECTIONS) {
+        if (prev.length < GAME_CONFIG_QUINA.maxSelections) {
           return [...prev, num];
         }
 
@@ -70,45 +61,31 @@ export const QuinaBetPage = ({
     []
   );
 
-  const validateForm = useCallback((): string | null => {
-    const trimmedName = playerName.trim();
-
-    if (!trimmedName) {
-      return 'Preencha o nome do jogador.';
-    }
-
-    if (!selectedPartnerId) {
-      return 'Selecione um sócio responsável pela aposta.';
-    }
-
-    if (selectedNumbers.length < MAX_SELECTIONS) {
-      return `Selecione ${MAX_SELECTIONS} números para a Quina. Você selecionou ${selectedNumbers.length}.`;
-    }
-
-    return null;
-  }, [playerName, selectedPartnerId, selectedNumbers]);
-
   const handleAddBet = useCallback((): void => {
-    const validationError = validateForm();
+    const validation = validateBetForm({
+      playerName,
+      selectedPartnerId,
+      selectedNumbers,
+      maxSelections: GAME_CONFIG_QUINA.maxSelections,
+      gameType: GAME_CONFIG_QUINA.type,
+    });
 
-    if (validationError) {
-      toast.error(validationError);
+    if (!validation.isValid) {
+      toast.error(validation.error || 'Erro de validação.');
       return;
     }
 
-    const newBet: Bet = {
-      id: generateUUID(),
-      playerName: playerName.trim(),
-      gameType: GAME_TYPE,
-      selectedNumbers: [...selectedNumbers].sort((a, b) => a - b),
-      isPaid: false,
+    const newBet = createBet({
+      playerName,
+      gameType: GAME_CONFIG_QUINA.type,
+      selectedNumbers,
       partnerId: selectedPartnerId,
-    };
+    });
 
     addBet(newBet);
     setSelectedNumbers([]);
     toast.success('Aposta na Quina adicionada com sucesso!');
-  }, [playerName, selectedNumbers, selectedPartnerId, addBet, validateForm]);
+  }, [playerName, selectedNumbers, selectedPartnerId, addBet]);
 
   const handleSendBets = async (): Promise<void> => {
     if (bets.length === 0) {
@@ -116,49 +93,32 @@ export const QuinaBetPage = ({
       return;
     }
 
-    const betsToSend = bets.map((bet: Bet) => ({
-      ...bet,
-      id: bet.id || generateUUID(),
-      partnerId: bet.partnerId || selectedPartnerId,
-    }));
-
-    const result = await Swal.fire({
-      title: 'Confirmar envio',
-      text: 'Tem certeza que deseja enviar todas as suas apostas da Quina?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sim, enviar',
-      cancelButtonText: 'Cancelar',
-    });
-
-    if (!result.isConfirmed) {
-      toast('Envio cancelado.');
+    const confirmed = await confirmSendBets({ gameType: GAME_CONFIG_QUINA.type });
+    if (!confirmed) {
       return;
     }
 
+    const betsToSend = prepareBetsForSending({ bets, defaultPartnerId: selectedPartnerId });
+
+    setIsSending(true);
     try {
       await betService.sendFilteredBets(betsToSend);
       toast.success('Apostas da Quina enviadas com sucesso!');
       clearBets();
     } catch (error) {
       toast.error('Erro ao enviar apostas da Quina.');
+    } finally {
+      setIsSending(false);
     }
   };
 
+  const handlePlayerNameChangeCallback = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    handlePlayerNameChange(e, setPlayerName);
+  }, []);
 
-  const handlePlayerNameChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>): void => {
-      setPlayerName(e.target.value);
-    },
-    []
-  );
-
-  const handlePartnerChange = useCallback(
-    (value: string): void => {
-      setSelectedPartnerId(value);
-    },
-    []
-  );
+  const handlePartnerChange = useCallback((value: string): void => {
+    setSelectedPartnerId(value);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
@@ -177,7 +137,7 @@ export const QuinaBetPage = ({
                 id="player-name"
                 type="text"
                 value={playerName}
-                onChange={handlePlayerNameChange}
+                onChange={handlePlayerNameChangeCallback}
                 placeholder="Digite o nome do jogador"
                 className="h-10 sm:h-11"
               />
@@ -209,13 +169,13 @@ export const QuinaBetPage = ({
             </div>
 
             <div>
-              <Label className="mb-3 block">Selecione {MAX_SELECTIONS} números</Label>
+              <Label className="mb-3 block">Selecione {GAME_CONFIG_QUINA.maxSelections} números</Label>
               <NumberGrid
-                totalNumbers={TOTAL_NUMBERS}
+                totalNumbers={GAME_CONFIG_QUINA.totalNumbers}
                 selectedNumbers={selectedNumbers}
                 onToggleNumber={toggleNumber}
-                selectedColor={SELECTED_COLOR}
-                maxSelections={MAX_SELECTIONS}
+                selectedColor={GAME_CONFIG_QUINA.selectedColor}
+                maxSelections={GAME_CONFIG_QUINA.maxSelections}
               />
             </div>
 
@@ -231,9 +191,36 @@ export const QuinaBetPage = ({
               <Button
                 onClick={handleSendBets}
                 variant="default"
-                className="w-full sm:flex-1 h-11 text-base font-semibold bg-green-600 hover:bg-green-700"
+                disabled={isSending}
+                className="w-full sm:flex-1 h-11 text-base font-semibold bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Enviar Todas Apostas
+                {isSending ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Enviando...
+                  </span>
+                ) : (
+                  'Enviar Todas Apostas'
+                )}
               </Button>
             </div>
 
@@ -244,4 +231,3 @@ export const QuinaBetPage = ({
     </div>
   );
 };
-

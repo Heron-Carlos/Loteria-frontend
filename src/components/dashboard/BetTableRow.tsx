@@ -10,6 +10,8 @@ import { sortNumbers } from '@/utils/bet.utils';
 type BetTableRowProps = {
   bet: Bet;
   index: number;
+  isSelected: boolean;
+  onSelectionChange: (betId: string, checked: boolean) => void;
   onMarkAsPaid: (betId: string, currentStatus: boolean) => void;
   onDelete: (betId: string) => void;
 };
@@ -17,6 +19,8 @@ type BetTableRowProps = {
 export const BetTableRow = ({
   bet,
   index,
+  isSelected,
+  onSelectionChange,
   onMarkAsPaid,
   onDelete,
 }: BetTableRowProps): JSX.Element => {
@@ -27,9 +31,18 @@ export const BetTableRow = ({
     <TableRow
       className={cn(
         'hover:bg-muted/50 transition-colors',
-        isMega ? 'bg-green-50/50' : 'bg-blue-50/50'
+        isMega ? 'bg-green-50/50' : 'bg-blue-50/50',
+        isSelected && 'bg-primary/5'
       )}
     >
+      <TableCell>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => onSelectionChange(bet.id, e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+        />
+      </TableCell>
       <TableCell className="font-medium">{index + 1}</TableCell>
       <TableCell className="font-medium">{bet.playerName}</TableCell>
       <TableCell>

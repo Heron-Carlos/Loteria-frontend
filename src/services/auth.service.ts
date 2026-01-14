@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { IAuthService } from '../interfaces/services.interface';
-import { LoginRequest, LoginResponse, Partner } from '../types/auth.types';
+import { LoginRequest, LoginResponse, RegisterRequest, Partner } from '../types/auth.types';
 
 const getApiBaseUrl = (): string => {
   const url = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -43,6 +43,10 @@ export class AuthService implements IAuthService {
     );
     this.saveUser(response.data);
     return response.data;
+  }
+
+  async register(request: RegisterRequest): Promise<void> {
+    await axios.post(`${API_URL}/register`, request);
   }
 
   logout(): void {

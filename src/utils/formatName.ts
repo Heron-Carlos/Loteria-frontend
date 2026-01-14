@@ -1,3 +1,7 @@
+export const removeAccents = (text: string): string => {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+};
+
 export const formatPartnerName = (username: string): string => {
   if (!username) {
     return '';

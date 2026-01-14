@@ -1,15 +1,12 @@
 import { useState, useCallback, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IAuthService } from '../interfaces/services.interface';
+import { LoginPageProps } from '../types/pages.types';
+import { validateLoginForm } from '../utils/validators/login.validator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import toast from 'react-hot-toast';
-
-type LoginPageProps = {
-  authService: IAuthService;
-};
 
 export const LoginPage = ({ authService }: LoginPageProps): JSX.Element => {
   const navigate = useNavigate();
@@ -17,26 +14,21 @@ export const LoginPage = ({ authService }: LoginPageProps): JSX.Element => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleUsernameChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>): void => {
-      setUsername(e.target.value);
-    },
-    []
-  );
+  const handleUsernameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setUsername(e.target.value);
+  }, []);
 
-  const handlePasswordChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>): void => {
-      setPassword(e.target.value);
-    },
-    []
-  );
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setPassword(e.target.value);
+  }, []);
 
   const handleSubmit = useCallback(
     async (e: FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
 
-      if (!username.trim() || !password.trim()) {
-        toast.error('Preencha todos os campos.');
+      const validation = validateLoginForm({ username, password });
+      if (!validation.isValid) {
+        toast.error(validation.error || 'Preencha todos os campos.');
         return;
       }
 

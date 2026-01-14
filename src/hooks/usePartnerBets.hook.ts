@@ -9,6 +9,8 @@ type UsePartnerBetsParams = {
   authService: IAuthService;
   user: LoginResponse | null;
   filteredGameType: string | null;
+  searchTerm?: string;
+  isPaidFilter?: boolean | null;
 };
 
 export const usePartnerBets = ({
@@ -16,6 +18,8 @@ export const usePartnerBets = ({
   authService,
   user,
   filteredGameType,
+  searchTerm,
+  isPaidFilter,
 }: UsePartnerBetsParams) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,7 +58,9 @@ export const usePartnerBets = ({
     try {
       const partnerBets = await betService.getPartnerBets(
         user!.userId,
-        filteredGameType || undefined
+        filteredGameType || undefined,
+        searchTerm,
+        isPaidFilter !== null && isPaidFilter !== undefined ? isPaidFilter : undefined
       );
       setBets(partnerBets);
     } catch (error) {
@@ -62,7 +68,7 @@ export const usePartnerBets = ({
     } finally {
       setLoading(false);
     }
-  }, [user, filteredGameType, betService, authService]);
+  }, [user, filteredGameType, searchTerm, isPaidFilter, betService, authService]);
 
   useEffect(() => {
     // Marca que a carga inicial passou após o primeiro render

@@ -15,6 +15,11 @@ type BetsTableProps = {
   bets: Bet[];
   loading: boolean;
   filteredGameType: string | null;
+  selectedBetIds: Set<string>;
+  isAllSelected: boolean;
+  isSomeSelected: boolean;
+  onBetSelectionChange: (betId: string, checked: boolean) => void;
+  onSelectAll: (checked: boolean) => void;
   onMarkAsPaid: (betId: string, currentStatus: boolean) => void;
   onDelete: (betId: string) => void;
 };
@@ -23,6 +28,9 @@ const BetTableSkeleton = (): JSX.Element => (
   <>
     {Array.from({ length: 5 }).map((_, index) => (
       <TableRow key={index}>
+        <TableCell>
+          <Skeleton className="h-4 w-4" />
+        </TableCell>
         <TableCell>
           <Skeleton className="h-4 w-8" />
         </TableCell>
@@ -50,7 +58,7 @@ const BetTableSkeleton = (): JSX.Element => (
 
 const EmptyState = ({ filteredGameType }: { filteredGameType: string | null }): JSX.Element => (
   <TableRow>
-    <TableCell colSpan={15} className="text-center py-12">
+    <TableCell colSpan={16} className="text-center py-12">
       <div className="flex flex-col items-center gap-2 text-muted-foreground">
         <span className="opacity-50">
           <FilterIcon />
@@ -70,6 +78,11 @@ export const BetsTable = ({
   bets,
   loading,
   filteredGameType,
+  selectedBetIds,
+  isAllSelected,
+  isSomeSelected,
+  onBetSelectionChange,
+  onSelectAll,
   onMarkAsPaid,
   onDelete,
 }: BetsTableProps): JSX.Element => {
@@ -78,6 +91,17 @@ export const BetsTable = ({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                onChange={(e) => onSelectAll(e.target.checked)}
+                ref={(input) => {
+                  if (input) input.indeterminate = isSomeSelected;
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+              />
+            </TableHead>
             <TableHead className="w-12">#</TableHead>
             <TableHead>Jogador</TableHead>
             <TableHead>Jogo</TableHead>
@@ -99,6 +123,8 @@ export const BetsTable = ({
                 key={bet.id}
                 bet={bet}
                 index={index}
+                isSelected={selectedBetIds.has(bet.id)}
+                onSelectionChange={onBetSelectionChange}
                 onMarkAsPaid={onMarkAsPaid}
                 onDelete={onDelete}
               />

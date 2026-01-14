@@ -14,3 +14,10 @@ export type CreateBetRequest = {
   partnerId: string;
 };
 
+export type PaginatedBetsResponse = {
+  bets: Bet[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};

@@ -1,9 +1,9 @@
 import { Bet, CreateBetRequest } from '../types/bet.types';
-import { LoginRequest, LoginResponse, Partner } from '../types/auth.types';
+import { LoginRequest, LoginResponse, RegisterRequest, Partner } from '../types/auth.types';
 
 export interface IBetService {
   createBet(request: CreateBetRequest): Promise<string>;
-  getPartnerBets(partnerId: string, gameType?: string): Promise<Bet[]>;
+  getPartnerBets(partnerId: string, gameType?: string, search?: string, isPaid?: boolean): Promise<Bet[]>;
   exportPartnerBetsToExcel(gameType?: string): Promise<Blob>;
   updateBetPaidStatus(betId: string, isPaid: boolean): Promise<void>;
   deleteBet(betId: string): Promise<void>;
@@ -17,6 +17,7 @@ export interface IBetService {
 
 export interface IAuthService {
   login(request: LoginRequest): Promise<LoginResponse>;
+  register(request: RegisterRequest): Promise<void>;
   logout(): void;
   isLoggedIn(): boolean;
   getCurrentUser(): LoginResponse | null;
