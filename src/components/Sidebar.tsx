@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IAuthService } from '../interfaces/services.interface';
 import { useAuth } from '../hooks/useAuth.hook';
@@ -9,13 +9,20 @@ type SidebarProps = {
   authService: IAuthService;
   isOpen: boolean;
   onToggle: () => void;
+  isMobileOpen: boolean;
+  onMobileToggle: () => void;
 };
 
-export const Sidebar = ({ authService, isOpen, onToggle }: SidebarProps): JSX.Element => {
+export const Sidebar = ({
+  authService,
+  isOpen,
+  onToggle,
+  isMobileOpen,
+  onMobileToggle,
+}: SidebarProps): JSX.Element => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth(authService);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { logout } = useAuth(authService);
 
   const handleLogout = useCallback((): void => {
     logout();
@@ -23,22 +30,14 @@ export const Sidebar = ({ authService, isOpen, onToggle }: SidebarProps): JSX.El
     toast.success('Logout realizado com sucesso!');
   }, [logout, navigate]);
 
-  const toggleMobileMenu = useCallback((): void => {
-    setIsMobileMenuOpen((prev) => !prev);
-  }, []);
-
   const handleLinkClick = useCallback((): void => {
-    setIsMobileMenuOpen(false);
-  }, []);
-
-  const handleToggle = useCallback((): void => {
-    onToggle();
-  }, [onToggle]);
+    if (window.innerWidth < 768) {
+      onMobileToggle();
+    }
+  }, [onMobileToggle]);
 
   const isActive = useCallback(
-    (path: string): boolean => {
-      return location.pathname === path;
-    },
+    (path: string): boolean => location.pathname === path,
     [location.pathname]
   );
 
@@ -47,13 +46,7 @@ export const Sidebar = ({ authService, isOpen, onToggle }: SidebarProps): JSX.El
       path: '/admin/dashboard',
       label: 'Dashboard',
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -67,19 +60,8 @@ export const Sidebar = ({ authService, isOpen, onToggle }: SidebarProps): JSX.El
       path: '/register',
       label: 'Adicionar Usuário',
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 4v16m8-8H4"
-          />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
       ),
     },
@@ -87,78 +69,54 @@ export const Sidebar = ({ authService, isOpen, onToggle }: SidebarProps): JSX.El
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={toggleMobileMenu}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-white shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-        aria-label="Toggle menu"
-      >
-        <svg
-          className="w-6 h-6 text-gray-700"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          {isMobileMenuOpen ? (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          )}
-        </svg>
-      </button>
-
       {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
+      {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={toggleMobileMenu}
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onMobileToggle}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 shadow-lg z-50 flex flex-col transform transition-all duration-300 ease-in-out ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${
-          isOpen ? 'md:translate-x-0 md:w-64' : 'md:translate-x-0 md:w-20'
-        }`}
+        className={`
+          fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50
+          flex flex-col
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isOpen ? 'md:translate-x-0 md:w-64' : 'md:translate-x-0 md:w-20'}
+          w-64
+          transition-all duration-300 ease-in-out
+          md:z-40
+        `}
       >
-        <div className={`border-b border-gray-200 transition-all duration-300 ${
-          isOpen ? 'p-6' : 'p-4 md:p-3'
-        }`}>
-          <div className="flex items-center justify-between gap-2">
-            {isOpen && (
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                  Sistema de Loteria
-                </h2>
-                {user && (
-                  <p className="text-sm text-gray-600 mt-1 truncate">{user.username}</p>
-                )}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
+        {/* Header */}
+        <div className="h-16 border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
+          {(isOpen || isMobileOpen) && (
+            <>
               <button
-                onClick={toggleMobileMenu}
-                className="md:hidden p-1 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
-                aria-label="Fechar menu"
+                onClick={onToggle}
+                className="hidden md:block p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Toggle sidebar"
               >
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+              <h1 className="text-lg font-bold text-blue-600 flex-1 ml-3 truncate md:ml-3 ml-0">
+                Sistema de Loteria
+              </h1>
+              <button
+                onClick={onMobileToggle}
+                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Close sidebar"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -167,81 +125,64 @@ export const Sidebar = ({ authService, isOpen, onToggle }: SidebarProps): JSX.El
                   />
                 </svg>
               </button>
-              <button
-                onClick={handleToggle}
-                className="hidden md:flex p-1 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
-                aria-label={isOpen ? 'Colapsar menu' : 'Expandir menu'}
-              >
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  {isOpen ? (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-                    />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                    />
-                  )}
-                </svg>
-              </button>
-            </div>
-          </div>
+            </>
+          )}
+          {!isOpen && !isMobileOpen && (
+            <button
+              onClick={onToggle}
+              className="hidden md:flex w-full justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="Expand sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          )}
         </div>
 
-        <nav className={`flex-1 space-y-2 overflow-y-auto transition-all duration-300 ${
-          isOpen ? 'p-4' : 'p-2'
-        }`}>
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={handleLinkClick}
-              className={`flex items-center rounded-lg font-medium transition-all duration-200 ${
-                isOpen ? 'gap-3 px-4 py-3' : 'justify-center px-2 py-3'
-              } ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
-              }`}
-              title={!isOpen ? item.label : undefined}
-            >
-              <span className={`flex-shrink-0 ${isActive(item.path) ? 'text-white' : 'text-gray-500'}`}>
-                {item.icon}
-              </span>
-              {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
-            </Link>
-          ))}
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto p-3">
+          <div className="space-y-2">
+            {menuItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={handleLinkClick}
+                className={`
+                  flex items-center rounded-lg font-medium transition-colors
+                  ${isOpen || isMobileOpen ? 'gap-3 px-4 py-3' : 'justify-center p-3'}
+                  ${
+                    isActive(item.path)
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }
+                `}
+                title={!(isOpen || isMobileOpen) ? item.label : undefined}
+              >
+                <span className="flex-shrink-0">{item.icon}</span>
+                {(isOpen || isMobileOpen) && <span className="truncate">{item.label}</span>}
+              </Link>
+            ))}
+          </div>
         </nav>
 
-        <div className={`border-t border-gray-200 transition-all duration-300 ${
-          isOpen ? 'p-4' : 'p-2'
-        }`}>
+        {/* Footer */}
+        <div className="border-t border-gray-200 p-3 flex-shrink-0">
           <Button
             onClick={handleLogout}
             variant="outline"
-            className={`w-full transition-all duration-300 ${
-              isOpen ? 'justify-start gap-3' : 'justify-center'
-            }`}
-            title={!isOpen ? 'Sair' : undefined}
+            className={`
+              w-full transition-colors
+              ${isOpen || isMobileOpen ? 'justify-start gap-3' : 'justify-center p-3'}
+            `}
+            title={!(isOpen || isMobileOpen) ? 'Sair' : undefined}
           >
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -249,11 +190,10 @@ export const Sidebar = ({ authService, isOpen, onToggle }: SidebarProps): JSX.El
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
               />
             </svg>
-            {isOpen && <span>Sair</span>}
+            {(isOpen || isMobileOpen) && <span className="truncate">Sair</span>}
           </Button>
         </div>
       </aside>
     </>
   );
 };
-
