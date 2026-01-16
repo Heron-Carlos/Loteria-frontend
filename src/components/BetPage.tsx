@@ -22,6 +22,7 @@ import { filterValidPartners } from '../utils/validatePartners';
 import { validateBetForm } from '../utils/validators/bet.validator';
 import { createBet, prepareBetsForSending } from '../utils/betCreation';
 import { confirmSendBets } from '../utils/confirmations';
+import { handlePlayerNameChange as handlePlayerNameChangeUtil } from '../utils/formHandlers';
 import toast from 'react-hot-toast';
 
 type BetPageCoreProps = BetPageProps & {
@@ -119,7 +120,7 @@ export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProp
   }, [bets, selectedPartnerId, betService, clearBets, gameConfig.type]);
 
   const handlePlayerNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
-    setPlayerName(e.target.value);
+    handlePlayerNameChangeUtil(e, setPlayerName);
   }, []);
 
   const handlePartnerChange = useCallback((value: string): void => {
