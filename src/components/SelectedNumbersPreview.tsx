@@ -1,11 +1,12 @@
+import { memo, useMemo } from 'react';
 import { formatSequentialNumber } from '../utils/bet.utils';
+import { SelectedNumbersPreviewProps } from '../types/component.types';
 
-type SelectedNumbersPreviewProps = {
-  selectedNumbers: number[];
-};
-
-export const SelectedNumbersPreview = ({ selectedNumbers }: SelectedNumbersPreviewProps): JSX.Element => {
-  const sortedNumbers = [...selectedNumbers].sort((a, b) => a - b);
+export const SelectedNumbersPreview = memo<SelectedNumbersPreviewProps>(({ selectedNumbers }) => {
+  const sortedNumbers = useMemo(
+    () => [...selectedNumbers].sort((a, b) => a - b),
+    [selectedNumbers]
+  );
 
   if (sortedNumbers.length === 0) {
     return (
@@ -34,5 +35,6 @@ export const SelectedNumbersPreview = ({ selectedNumbers }: SelectedNumbersPrevi
       </div>
     </div>
   );
-};
+});
 
+SelectedNumbersPreview.displayName = 'SelectedNumbersPreview';

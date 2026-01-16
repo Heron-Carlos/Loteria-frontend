@@ -1,20 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bet } from '../types/bet.types';
 import { IBetService } from '../interfaces/services.interface';
 
 export const useBets = (betService: IBetService, gameType?: 'Mega' | 'Quina') => {
   const [bets, setBets] = useState<Bet[]>([]);
+  const gameTypeRef = useRef(gameType);
 
   const loadBets = useCallback(() => {
     const localBets = betService.getLocalBets();
-    const filteredBets = gameType
-      ? localBets.filter((bet) => bet.gameType === gameType)
+    
+    const filteredBets = gameTypeRef.current
+      ? localBets.filter((bet) => bet.gameType === gameTypeRef.current)
       : localBets;
+    
     setBets(filteredBets);
-  }, [betService, gameType]);
+  }, [betService]);
+
+  useEffect(() => {
+    gameTypeRef.current = gameType;
+  }, [gameType]);
 
   useEffect(() => {
     loadBets();
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'bets') {
+        loadBets();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [loadBets]);
 
   const addBet = useCallback(
@@ -34,13 +53,18 @@ export const useBets = (betService: IBetService, gameType?: 'Mega' | 'Quina') =>
   );
 
   const clearBets = useCallback(() => {
-    if (gameType) {
-      betService.clearFilteredLocalBets(gameType);
-    } else {
+    const currentGameType = gameTypeRef.current;
+    
+    if (currentGameType) {
+      betService.clearFilteredLocalBets(currentGameType);
+    }
+    
+    if (!currentGameType) {
       betService.clearLocalBets();
     }
+    
     loadBets();
-  }, [betService, gameType, loadBets]);
+  }, [betService, loadBets]);
 
   return {
     bets,
@@ -50,4 +74,3 @@ export const useBets = (betService: IBetService, gameType?: 'Mega' | 'Quina') =>
     reload: loadBets,
   };
 };
-
