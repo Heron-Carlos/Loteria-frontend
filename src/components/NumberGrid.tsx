@@ -1,3 +1,5 @@
+import { formatSequentialNumber } from '../utils/bet.utils';
+
 type NumberGridProps = {
   totalNumbers: number;
   selectedNumbers: number[];
@@ -29,7 +31,7 @@ const NumberButton = ({ num, isSelected, isDisabled, selectedColor, onClick }: N
       }`}
       style={isSelected ? { backgroundColor: selectedColor } : undefined}
     >
-      {num}
+      {formatSequentialNumber(num)}
     </button>
   );
 };

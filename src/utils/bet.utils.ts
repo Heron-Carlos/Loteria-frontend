@@ -4,6 +4,23 @@ export const sortNumbers = (numbers: number[]): number[] => {
   return [...numbers].sort((a, b) => a - b);
 };
 
+export const formatPlayerNameForDisplay = (playerName: string): string => {
+  const trimmed = playerName.trim();
+  const match = trimmed.match(/^(.+?)\s+(\d+)$/);
+  
+  if (match) {
+    const baseName = match[1].trim();
+    const number = parseInt(match[2], 10);
+    return `${baseName} ${formatSequentialNumber(number)}`;
+  }
+  
+  return trimmed;
+};
+
+export const formatSequentialNumber = (num: number): string => {
+  return num < 10 ? `0${num}` : `${num}`;
+};
+
 const extractBaseNameAndNumber = (playerName: string): { baseName: string; number: number | null } => {
   const trimmed = playerName.trim();
   const match = trimmed.match(/^(.+?)\s+(\d+)$/);
@@ -74,7 +91,7 @@ export const addSequentialNumbersToDuplicateNames = (
     currentCounters.set(baseName, currentCount);
     
     const playerName = shouldAddNumber
-      ? `${baseName} ${currentCount}`
+      ? `${baseName} ${formatSequentialNumber(currentCount)}`
       : baseName;
     
     return { ...bet, playerName };

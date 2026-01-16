@@ -62,6 +62,20 @@ export class BetService implements IBetService {
     return response.data.bets;
   }
 
+  async getPublicPartnerBets(partnerId: string, gameType?: string): Promise<Bet[]> {
+    const params: Record<string, string> = {};
+    
+    if (gameType) {
+      params.gameType = gameType;
+    }
+
+    const response = await axios.get<PaginatedBetsResponse>(`${API_URL}/public/${partnerId}`, {
+      params,
+    });
+
+    return response.data.bets;
+  }
+
   async exportPartnerBetsToExcel(gameType?: string): Promise<Blob> {
     const headers = this.authService.getAuthHeader();
     const params = gameType ? { gameType } : {};
@@ -128,8 +142,21 @@ export class BetService implements IBetService {
   async sendFilteredBets(bets: Bet[]): Promise<void> {
     const firstBet = bets[0];
     const gameType = firstBet?.gameType;
+    const partnerId = firstBet?.partnerId;
     
-    const existingBets = await this.getPartnerBets('', gameType);
+    if (!partnerId) {
+      throw new Error('Partner ID não encontrado nas apostas.');
+    }
+    
+    // Busca apostas existentes usando a rota pública
+    let existingBets: Bet[] = [];
+    try {
+      existingBets = await this.getPublicPartnerBets(partnerId, gameType);
+    } catch (error) {
+      // Se houver erro ao buscar apostas existentes, continua sem elas
+      console.warn('Não foi possível buscar apostas existentes. Continuando sem numeração sequencial.', error);
+    }
+    
     const betsWithNumberedNames = addSequentialNumbersToDuplicateNames(bets, existingBets);
     
     const requests = betsWithNumberedNames.map((bet) => {

@@ -1,3 +1,5 @@
+import { formatSequentialNumber } from '../utils/bet.utils';
+
 type SelectedNumbersPreviewProps = {
   selectedNumbers: number[];
 };
@@ -26,7 +28,7 @@ export const SelectedNumbersPreview = ({ selectedNumbers }: SelectedNumbersPrevi
             key={num}
             className="px-2 sm:px-3 py-1 bg-white border border-gray-300 rounded-full text-xs sm:text-sm font-medium text-gray-700 shadow-sm"
           >
-            {num}
+            {formatSequentialNumber(num)}
           </span>
         ))}
       </div>

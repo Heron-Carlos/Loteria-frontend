@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrashIcon } from '@/components/icons';
+import { formatPlayerNameForDisplay, formatSequentialNumber } from '../utils/bet.utils';
 
 type BetListProps = {
   bets: Bet[];
@@ -57,7 +58,7 @@ const BetCard = memo<BetCardProps>(({ bet, onDelete }) => {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-base sm:text-lg mb-2 truncate">
-              {bet.playerName}
+              {formatPlayerNameForDisplay(bet.playerName)}
             </p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {sortedNumbers.map((num) => (
@@ -65,7 +66,7 @@ const BetCard = memo<BetCardProps>(({ bet, onDelete }) => {
                   key={num}
                   className="bg-white rounded-full w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center font-semibold text-xs sm:text-sm shadow-sm border border-gray-200"
                 >
-                  {num}
+                  {formatSequentialNumber(num)}
                 </span>
               ))}
             </div>

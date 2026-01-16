@@ -4,6 +4,7 @@ import { LoginRequest, LoginResponse, RegisterRequest, Partner } from '../types/
 export interface IBetService {
   createBet(request: CreateBetRequest): Promise<string>;
   getPartnerBets(partnerId: string, gameType?: string, search?: string, isPaid?: boolean): Promise<Bet[]>;
+  getPublicPartnerBets(partnerId: string, gameType?: string): Promise<Bet[]>;
   exportPartnerBetsToExcel(gameType?: string): Promise<Blob>;
   updateBetPaidStatus(betId: string, isPaid: boolean): Promise<void>;
   deleteBet(betId: string): Promise<void>;

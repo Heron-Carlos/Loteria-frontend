@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircleIcon, XCircleIcon, TrashIcon } from '@/components/icons';
 import { Bet } from '@/types/bet.types';
 import { cn } from '@/lib/utils';
-import { sortNumbers } from '@/utils/bet.utils';
+import { sortNumbers, formatPlayerNameForDisplay, formatSequentialNumber } from '@/utils/bet.utils';
 
 type BetTableRowProps = {
   bet: Bet;
@@ -44,7 +44,7 @@ export const BetTableRow = ({
         />
       </TableCell>
       <TableCell className="font-medium">{index + 1}</TableCell>
-      <TableCell className="font-medium">{bet.playerName}</TableCell>
+      <TableCell className="font-medium">{formatPlayerNameForDisplay(bet.playerName)}</TableCell>
       <TableCell>
         <Badge variant={isMega ? 'success' : 'default'}>
           {bet.gameType.toUpperCase()}
@@ -52,7 +52,7 @@ export const BetTableRow = ({
       </TableCell>
       {sortedNumbers.map((num: number) => (
         <TableCell key={num} className="text-center font-semibold">
-          {num}
+          {formatSequentialNumber(num)}
         </TableCell>
       ))}
       <TableCell className="text-center">
