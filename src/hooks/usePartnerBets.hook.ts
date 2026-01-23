@@ -75,15 +75,18 @@ export const usePartnerBets = ({
       initialLoadRef.current = false;
     }, 100);
 
-    // Reseta para página 1 quando filtros mudam
-    setCurrentPage(1);
-    loadPartnerBets(1);
+    // Só carrega se o user estiver disponível
+    if (user) {
+      // Reseta para página 1 quando filtros mudam
+      setCurrentPage(1);
+      loadPartnerBets(1);
+    }
 
     return () => {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredGameType, searchTerm, isPaidFilter, itemsPerPage]);
+  }, [user, filteredGameType, searchTerm, isPaidFilter, itemsPerPage]);
 
   const goToPage = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
