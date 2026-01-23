@@ -38,7 +38,14 @@ export class BetService implements IBetService {
     return response.data.id;
   }
 
-  async getPartnerBets(_partnerId: string, gameType?: string, search?: string, isPaid?: boolean): Promise<Bet[]> {
+  async getPartnerBets(
+    _partnerId: string, 
+    gameType?: string, 
+    search?: string, 
+    isPaid?: boolean,
+    page?: number,
+    limit?: number
+  ): Promise<PaginatedBetsResponse> {
     const headers = this.authService.getAuthHeader();
     const params: Record<string, string> = {};
     
@@ -54,12 +61,16 @@ export class BetService implements IBetService {
       params.isPaid = isPaid.toString();
     }
 
+    // Adiciona parâmetros de paginação
+    params.page = (page || 1).toString();
+    params.limit = (limit || 50).toString();
+
     const response = await axios.get<PaginatedBetsResponse>(`${API_URL}/partner`, {
       headers,
       params,
     });
 
-    return response.data.bets;
+    return response.data;
   }
 
   async getPublicPartnerBets(partnerId: string, gameType?: string): Promise<Bet[]> {
@@ -76,9 +87,17 @@ export class BetService implements IBetService {
     return response.data.bets;
   }
 
-  async exportPartnerBetsToExcel(gameType?: string): Promise<Blob> {
+  async exportPartnerBetsToExcel(gameType?: string, isPaid?: boolean): Promise<Blob> {
     const headers = this.authService.getAuthHeader();
-    const params = gameType ? { gameType } : {};
+    const params: Record<string, string> = {};
+    
+    if (gameType) {
+      params.gameType = gameType;
+    }
+    
+    if (isPaid !== undefined) {
+      params.isPaid = isPaid.toString();
+    }
 
     const response = await axios.post(
       `${API_URL}/partner/export`,
@@ -105,6 +124,14 @@ export class BetService implements IBetService {
   async deleteBet(betId: string): Promise<void> {
     const headers = this.authService.getAuthHeader();
     await axios.delete(`${API_URL}/${betId}`, { headers });
+  }
+
+  async getPartnerStats(_partnerId: string): Promise<{ total: number; paid: number; pending: number; mega: number; quina: number }> {
+    const headers = this.authService.getAuthHeader();
+    const response = await axios.get<{ total: number; paid: number; pending: number; mega: number; quina: number }>(`${API_URL}/partner/stats`, {
+      headers,
+    });
+    return response.data;
   }
 
   addLocalBet(bet: Bet): void {

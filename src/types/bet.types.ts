@@ -21,3 +21,11 @@ export type PaginatedBetsResponse = {
   limit: number;
   totalPages: number;
 };
+
+export type BetStats = {
+  total: number;
+  paid: number;
+  pending: number;
+  mega: number;
+  quina: number;
+};

@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { AdminDashboardPageProps } from '../types/pages.types';
 import { useAuth } from '../hooks/useAuth.hook';
 import { usePartnerBets } from '../hooks/usePartnerBets.hook';
+import { usePartnerStats } from '../hooks/usePartnerStats.hook';
 import { useBetActions } from '../hooks/useBetActions.hook';
 import { useExportBets } from '../hooks/useExportBets.hook';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,7 +13,8 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { StatsCards } from '@/components/dashboard/StatsCards';
 import { FiltersBar } from '@/components/dashboard/FiltersBar';
 import { BetsTable } from '@/components/dashboard/BetsTable';
-import { calculateStats } from '@/utils/dashboard.utils';
+import { Pagination } from '@/components/Pagination';
+import { ExportMenu } from '@/components/dashboard/ExportMenu';
 
 export const AdminDashboardPage = ({
   betService,
@@ -25,7 +27,19 @@ export const AdminDashboardPage = ({
   const [isPaidFilter, setIsPaidFilter] = useState<boolean | null>(null);
   const [selectedBetIds, setSelectedBetIds] = useState<Set<string>>(new Set());
 
-  const { bets, loading, reloadBets } = usePartnerBets({
+  const { 
+    bets, 
+    loading, 
+    reloadBets,
+    currentPage,
+    totalPages,
+    total,
+    itemsPerPage,
+    goToPage,
+    nextPage,
+    previousPage,
+    changeItemsPerPage,
+  } = usePartnerBets({
     betService,
     authService,
     user,
@@ -34,15 +48,24 @@ export const AdminDashboardPage = ({
     isPaidFilter,
   });
 
+  const { stats, reloadStats } = usePartnerStats({
+    betService,
+    authService,
+    user,
+  });
+
+  const handleReloadBets = useCallback(async () => {
+    await reloadBets();
+    await reloadStats();
+  }, [reloadBets, reloadStats]);
+
   const { markAsPaid, deleteBet, markAsPaidBulk, deleteBetBulk } = useBetActions({
     betService,
-    reloadBets,
+    reloadBets: handleReloadBets,
   });
 
   const { exportBets } = useExportBets({
     betService,
-    betsCount: bets.length,
-    exportGameType,
     username: user?.username,
   });
 
@@ -79,8 +102,6 @@ export const AdminDashboardPage = ({
     },
     [bets]
   );
-
-  const stats = useMemo(() => calculateStats(sortedBets), [sortedBets]);
 
   const handleBetSelectionChange = useCallback((betId: string, checked: boolean): void => {
     setSelectedBetIds((prev) => {
@@ -133,23 +154,29 @@ export const AdminDashboardPage = ({
           <CardContent className="space-y-6">
             <StatsCards stats={stats} />
 
-            <FiltersBar
-              filteredGameType={filteredGameType}
-              exportGameType={exportGameType}
-              isPaidFilter={isPaidFilter}
-              onFilterChange={handleFilterChange}
-              onExportGameTypeChange={handleExportGameTypeChange}
-              onIsPaidFilterChange={handleIsPaidFilterChange}
-              onExport={exportBets}
-              hasBets={bets.length > 0}
-            />
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <FiltersBar
+                filteredGameType={filteredGameType}
+                exportGameType={exportGameType}
+                isPaidFilter={isPaidFilter}
+                onFilterChange={handleFilterChange}
+                onExportGameTypeChange={handleExportGameTypeChange}
+                onIsPaidFilterChange={handleIsPaidFilterChange}
+                onExport={exportBets}
+                hasBets={bets.length > 0}
+              />
+              <ExportMenu
+                onExport={exportBets}
+                hasBets={bets.length > 0}
+              />
+            </div>
 
             <Card className="border-2">
               <div className="p-4 border-b space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Apostas</h3>
                   <Button
-                    onClick={reloadBets}
+                    onClick={handleReloadBets}
                     disabled={loading}
                     variant="outline"
                     size="sm"
@@ -285,6 +312,18 @@ export const AdminDashboardPage = ({
                   onMarkAsPaid={markAsPaid}
                   onDelete={deleteBet}
                 />
+                {!loading && bets.length > 0 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    total={total}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={goToPage}
+                    onItemsPerPageChange={changeItemsPerPage}
+                    onNext={nextPage}
+                    onPrevious={previousPage}
+                  />
+                )}
               </CardContent>
             </Card>
           </CardContent>

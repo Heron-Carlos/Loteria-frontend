@@ -1,12 +1,7 @@
 import { useCallback } from 'react';
-import { IBetService } from '../interfaces/services.interface';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-
-type UseBetActionsParams = {
-  betService: IBetService;
-  reloadBets: () => Promise<void>;
-};
+import { UseBetActionsParams } from '../types/hooks.types';
 
 export const useBetActions = ({ betService, reloadBets }: UseBetActionsParams) => {
   const markAsPaid = useCallback(

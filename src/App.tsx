@@ -44,6 +44,7 @@ const App = (): JSX.Element => {
           </ProtectedRoute>
         }
       />
+      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="/" element={<Navigate to="/mega" replace />} />
     </Routes>
   );

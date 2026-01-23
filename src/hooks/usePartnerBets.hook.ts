@@ -1,17 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { IBetService, IAuthService } from '../interfaces/services.interface';
-import { Bet } from '../types/bet.types';
-import { LoginResponse } from '../types/auth.types';
 import toast from 'react-hot-toast';
-
-type UsePartnerBetsParams = {
-  betService: IBetService;
-  authService: IAuthService;
-  user: LoginResponse | null;
-  filteredGameType: string | null;
-  searchTerm?: string;
-  isPaidFilter?: boolean | null;
-};
+import { Bet } from '../types/bet.types';
+import { UsePartnerBetsParams } from '../types/hooks.types';
 
 export const usePartnerBets = ({
   betService,
@@ -23,10 +13,14 @@ export const usePartnerBets = ({
 }: UsePartnerBetsParams) => {
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const hasShownUnauthorizedToast = useRef(false);
   const initialLoadRef = useRef(true);
 
-  const loadPartnerBets = useCallback(async (): Promise<void> => {
+  const loadPartnerBets = useCallback(async (page: number = currentPage): Promise<void> => {
     // Se o serviço de autenticação diz que está logado, mas o user ainda não foi carregado,
     // aguarda um pouco (pode ser carregamento inicial ou após login)
     const isLoggedIn = authService.isLoggedIn();
@@ -56,19 +50,24 @@ export const usePartnerBets = ({
 
     setLoading(true);
     try {
-      const partnerBets = await betService.getPartnerBets(
+      const response = await betService.getPartnerBets(
         user!.userId,
         filteredGameType || undefined,
         searchTerm,
-        isPaidFilter !== null && isPaidFilter !== undefined ? isPaidFilter : undefined
+        isPaidFilter !== null && isPaidFilter !== undefined ? isPaidFilter : undefined,
+        page,
+        itemsPerPage
       );
-      setBets(partnerBets);
+      setBets(response.bets);
+      setTotal(response.total);
+      setTotalPages(response.totalPages);
+      setCurrentPage(page);
     } catch (error) {
       toast.error('Erro ao carregar apostas.');
     } finally {
       setLoading(false);
     }
-  }, [user, filteredGameType, searchTerm, isPaidFilter, betService, authService]);
+  }, [user, filteredGameType, searchTerm, isPaidFilter, betService, authService, currentPage, itemsPerPage]);
 
   useEffect(() => {
     // Marca que a carga inicial passou após o primeiro render
@@ -76,17 +75,51 @@ export const usePartnerBets = ({
       initialLoadRef.current = false;
     }, 100);
 
-    loadPartnerBets();
+    // Reseta para página 1 quando filtros mudam
+    setCurrentPage(1);
+    loadPartnerBets(1);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [loadPartnerBets]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredGameType, searchTerm, isPaidFilter, itemsPerPage]);
+
+  const goToPage = useCallback((page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      loadPartnerBets(page);
+    }
+  }, [totalPages, loadPartnerBets]);
+
+  const nextPage = useCallback(() => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  }, [currentPage, totalPages, goToPage]);
+
+  const previousPage = useCallback(() => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  }, [currentPage, goToPage]);
+
+  const changeItemsPerPage = useCallback((newLimit: number) => {
+    setItemsPerPage(newLimit);
+    setCurrentPage(1);
+  }, []);
 
   return {
     bets,
     loading,
-    reloadBets: loadPartnerBets,
+    currentPage,
+    totalPages,
+    total,
+    itemsPerPage,
+    reloadBets: () => loadPartnerBets(currentPage),
+    goToPage,
+    nextPage,
+    previousPage,
+    changeItemsPerPage,
   };
 };
 
