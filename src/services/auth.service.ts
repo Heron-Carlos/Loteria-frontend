@@ -83,5 +83,19 @@ export class AuthService implements IAuthService {
     
     return [];
   }
+
+  async getPartnerByUsername(username: string, gameType: 'Mega' | 'Quina'): Promise<Partner | null> {
+    try {
+      const response = await axios.get<Partner>(`${API_URL}/partners/${username}`, {
+        params: { gameType },
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
 }
 

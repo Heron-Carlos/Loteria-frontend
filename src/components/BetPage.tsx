@@ -17,18 +17,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatPartnerName } from '../utils/formatName';
+import { formatPartnerName, normalizePlayerName } from '../utils/formatName';
 import { filterValidPartners } from '../utils/validatePartners';
 import { validateBetForm } from '../utils/validators/bet.validator';
 import { createBet, prepareBetsForSending } from '../utils/betCreation';
 import { confirmSendBets } from '../utils/confirmations';
+import { Partner } from '../types/auth.types';
+import { PartnerPaymentInfo } from '../types/partner.types';
+import { getPartnerPaymentInfo } from '../services/partner-payment-info.service';
+import { PaymentInfoModal } from './PaymentInfoModal';
 import toast from 'react-hot-toast';
 
 type BetPageCoreProps = BetPageProps & {
   gameConfig: GameConfig;
+  filteredPartner?: Partner | null;
+  isDefaultRoute?: boolean;
 };
 
-export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProps): JSX.Element => {
+export const BetPage = ({ betService, authService, gameConfig, filteredPartner, isDefaultRoute }: BetPageCoreProps): JSX.Element => {
   const { partners } = useAuth(authService);
   const { bets, addBet, removeBet, clearBets } = useBets(betService, gameConfig.type);
 
@@ -36,11 +42,30 @@ export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProp
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<PartnerPaymentInfo[] | null>(null);
+  const [selectedPartnerName, setSelectedPartnerName] = useState('');
 
-  const validPartners = useMemo(
-    () => filterValidPartners(partners),
-    [partners]
-  );
+  const validPartners = useMemo(() => {
+    if (filteredPartner) {
+      // Se houver um sócio filtrado, mostrar apenas ele
+      return filterValidPartners([filteredPartner]);
+    }
+    
+    // Se for rota padrão (sem sócio na URL), mostrar apenas o Jorge
+    // Partner ID do Jorge: 5b53e8e8-f226-430d-91a3-760c74600a42
+    if (isDefaultRoute) {
+      const jorgePartnerId = '5b53e8e8-f226-430d-91a3-760c74600a42';
+      const jorgePartner = partners.find((p) => p.partnerId === jorgePartnerId);
+      if (jorgePartner) {
+        return filterValidPartners([jorgePartner]);
+      }
+      // Se não encontrar o Jorge, retornar array vazio
+      return [];
+    }
+    
+    // Caso contrário, mostrar todos os sócios válidos
+    return filterValidPartners(partners);
+  }, [partners, filteredPartner, isDefaultRoute]);
 
   const partnerSiglaKey = gameConfig.type === 'Mega' ? 'megaSigla' : 'quinaSigla';
 
@@ -49,6 +74,13 @@ export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProp
       setSelectedPartnerId(validPartners[0].partnerId);
     }
   }, [validPartners, selectedPartnerId]);
+
+  // Se houver um sócio filtrado e ele mudar, atualizar o selectedPartnerId
+  useEffect(() => {
+    if (filteredPartner && filteredPartner.partnerId) {
+      setSelectedPartnerId(filteredPartner.partnerId);
+    }
+  }, [filteredPartner]);
 
   const toggleNumber = useCallback((num: number): void => {
     setSelectedNumbers((prev) => {
@@ -108,6 +140,14 @@ export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProp
     try {
       await betService.sendFilteredBets(betsToSend);
       toast.success(`Apostas da ${gameConfig.type} enviadas com sucesso!`);
+      
+      const selectedPartner = filteredPartner || validPartners.find((p) => p.partnerId === selectedPartnerId);
+      const partnerName = selectedPartner ? formatPartnerName(selectedPartner.username) : '';
+      setSelectedPartnerName(partnerName);
+
+      const info = await getPartnerPaymentInfo(selectedPartnerId);
+      setPaymentInfo(info);
+      
       clearBets();
       setSelectedNumbers([]);
       setPlayerName('');
@@ -116,10 +156,12 @@ export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProp
     } finally {
       setIsSending(false);
     }
-  }, [bets, selectedPartnerId, betService, clearBets, gameConfig.type]);
+  }, [bets, selectedPartnerId, betService, clearBets, gameConfig.type, validPartners, filteredPartner]);
 
   const handlePlayerNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
-    setPlayerName(e.target.value);
+    // Durante a digitação, não usar trim para permitir espaços
+    const normalized = normalizePlayerName(e.target.value, false);
+    setPlayerName(normalized);
   }, []);
 
   const handlePartnerChange = useCallback((value: string): void => {
@@ -155,22 +197,31 @@ export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProp
 
             <div className="space-y-2">
               <Label htmlFor="partner-select">Sócio Responsável</Label>
-              <Select value={selectedPartnerId} onValueChange={handlePartnerChange}>
-                <SelectTrigger id="partner-select" className="h-10 sm:h-11">
-                  <SelectValue placeholder={selectPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {validPartners.map((partner) => {
-                    const displayName = formatPartnerName(partner.username);
-                    const sigla = partner[partnerSiglaKey];
-                    return (
-                      <SelectItem key={partner.id} value={partner.partnerId}>
-                        {displayName} - {sigla}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              {filteredPartner ? (
+                // Se houver um sócio filtrado, mostrar como texto (desabilitado)
+                <div className="h-10 sm:h-11 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 flex items-center">
+                  <span className="text-gray-700">
+                    {formatPartnerName(filteredPartner.username)} - {filteredPartner[partnerSiglaKey]}
+                  </span>
+                </div>
+              ) : (
+                <Select value={selectedPartnerId} onValueChange={handlePartnerChange}>
+                  <SelectTrigger id="partner-select" className="h-10 sm:h-11">
+                    <SelectValue placeholder={selectPlaceholder} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {validPartners.map((partner) => {
+                      const displayName = formatPartnerName(partner.username);
+                      const sigla = partner[partnerSiglaKey];
+                      return (
+                        <SelectItem key={partner.id} value={partner.partnerId}>
+                          {displayName} - {sigla}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div>
@@ -235,6 +286,13 @@ export const BetPage = ({ betService, authService, gameConfig }: BetPageCoreProp
           </CardContent>
         </Card>
       </div>
+      {paymentInfo && (
+        <PaymentInfoModal
+          paymentInfo={paymentInfo}
+          partnerName={selectedPartnerName}
+          onClose={() => setPaymentInfo(null)}
+        />
+      )}
     </div>
   );
 };

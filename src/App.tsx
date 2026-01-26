@@ -6,6 +6,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { MegaBetPage } from './pages/MegaBetPage';
 import { QuinaBetPage } from './pages/QuinaBetPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { PaymentInfoManagementPage } from './pages/PaymentInfoManagementPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 
@@ -35,11 +36,29 @@ const App = (): JSX.Element => {
         element={<QuinaBetPage betService={betService} authService={authService} />}
       />
       <Route
+        path="/:partnerUsername/mega"
+        element={<MegaBetPage betService={betService} authService={authService} />}
+      />
+      <Route
+        path="/:partnerUsername/quina"
+        element={<QuinaBetPage betService={betService} authService={authService} />}
+      />
+      <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute authService={authService}>
             <Layout authService={authService}>
               <AdminDashboardPage betService={betService} authService={authService} />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/payment-info"
+        element={
+          <ProtectedRoute authService={authService}>
+            <Layout authService={authService}>
+              <PaymentInfoManagementPage authService={authService} />
             </Layout>
           </ProtectedRoute>
         }

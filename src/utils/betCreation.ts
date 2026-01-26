@@ -1,5 +1,6 @@
 import { Bet } from '../types/bet.types';
 import { generateUUID } from './uuid';
+import { normalizePlayerName } from './formatName';
 
 type CreateBetParams = {
   playerName: string;
@@ -9,9 +10,12 @@ type CreateBetParams = {
 };
 
 export const createBet = ({ playerName, gameType, selectedNumbers, partnerId }: CreateBetParams): Bet => {
+  // Normaliza o nome com trim para remover espaços no início/fim antes de salvar
+  const normalizedName = normalizePlayerName(playerName, true);
+  
   return {
     id: generateUUID(),
-    playerName: playerName.trim(),
+    playerName: normalizedName,
     gameType,
     selectedNumbers: [...selectedNumbers].sort((a, b) => a - b),
     isPaid: false,

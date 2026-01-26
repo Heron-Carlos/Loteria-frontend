@@ -25,5 +25,6 @@ export interface IAuthService {
   getCurrentUser(): LoginResponse | null;
   getAuthHeader(): Record<string, string>;
   getAllPartners(): Promise<Partner[]>;
+  getPartnerByUsername(username: string, gameType: 'Mega' | 'Quina'): Promise<Partner | null>;
 }
 
